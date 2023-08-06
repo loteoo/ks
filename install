@@ -80,7 +80,7 @@ if [[ -f "$SCRIPT_PATH" ]]; then
 fi
 
 info "Downloading $SCRIPT_DOWNLOAD_URL..."
-curl -sSLf "$SCRIPT_DOWNLOAD_URL" -o "$SCRIPT_PATH"
+curl -fsSL "$SCRIPT_DOWNLOAD_URL" -o "$SCRIPT_PATH"
 success "==> Script added under $SCRIPT_PATH"
 
 if [[ ! -x "$SCRIPT_PATH" ]]; then
