@@ -1,0 +1,105 @@
+#!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+dimmed=$'\e[2m'
+bold=$(tput bold)
+cyan=$'\e[96m'
+normal=$(tput sgr0)
+
+SCRIPT_NAME="ks"
+SCRIPT_DOWNLOAD_URL="https://raw.githubusercontent.com/loteoo/ks/main/ks"
+REQUIRES_RESTART="false"
+SYSTEM_BIN_PATH="/usr/local/bin"
+LOCAL_BIN_PATH="$HOME/.local/bin"
+KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
+KEYCHAIN_FILE="$KEYCHAIN.keychain"
+
+info() {
+  # shellcheck disable=SC2145
+  echo "${dimmed}$@${normal}" 1>&2
+}
+
+success() {
+  # shellcheck disable=SC2145
+  echo "${cyan}$@${normal}"
+}
+
+throw() {
+  echo "$@" 1>&2
+  exit 1
+}
+
+yn() {
+  read -r -n 1 -p "$1 [y/n]: " yn
+  echo
+  if [[ "$yn" != [Yy]* ]]; then
+    return 1
+  fi
+}
+
+echo "Select install location:
+  1) For $USER user only. Script will be placed under: $LOCAL_BIN_PATH.
+  2) For whole system. Script will be placed under: $SYSTEM_BIN_PATH. Requires sudo."
+read -r -n 1 -p "Pick one: " num
+echo
+case "$num" in
+  1) BIN_PATH="$LOCAL_BIN_PATH";;
+  2) BIN_PATH="$SYSTEM_BIN_PATH";;
+  *) throw "Invalid choice.";;
+esac
+
+# Create bin directory if needed.
+if [[ ! -d "$BIN_PATH" ]]; then
+  if ! yn "Need to create $BIN_PATH. Continue?"; then
+    throw "Installation aborted."
+  fi
+  mkdir "$BIN_PATH"
+  success "==> Created $BIN_PATH folder."
+else
+  info "✓ Directory exists."
+fi
+
+# Add to bin directory to $PATH if needed.
+if ! echo "$PATH" | tr ':' $'\n' | grep -q "$BIN_PATH"; then
+  if ! yn "$BIN_PATH has not been added to \$PATH. Add to path? (requires sudo privileges)"; then
+    throw "Installation aborted."
+  fi
+  sudo bash -c "echo '$BIN_PATH' >> /etc/paths"
+  REQUIRES_RESTART="true"
+  success "==> $BIN_PATH was added to \$PATH."
+else
+  info "✓ Directory is in \$PATH."
+fi
+
+SCRIPT_PATH="$BIN_PATH/$SCRIPT_NAME"
+
+if [[ -f "$SCRIPT_PATH" ]]; then
+  if ! yn "File $SCRIPT_PATH already exists. Replace?"; then
+    throw "Installation aborted."
+  fi
+fi
+
+info "Downloading $SCRIPT_DOWNLOAD_URL..."
+curl -sSLf "$SCRIPT_DOWNLOAD_URL" -o "$SCRIPT_PATH"
+success "==> Script added under $SCRIPT_PATH"
+
+if [[ ! -x "$SCRIPT_PATH" ]]; then
+  chmod +x "$SCRIPT_PATH"
+  success "==> Script made executable."
+else
+  info "✓ Script is executable."
+fi
+
+if ! security show-keychain-info "$KEYCHAIN_FILE" > /dev/null 2>&1; then
+  $SCRIPT_NAME init
+else
+  info "✓ Keychain \"$KEYCHAIN\" exists."
+fi
+
+if [[ "$REQUIRES_RESTART" == "true" ]]; then
+  info "⚠️ Restart your terminal to make $SCRIPT_NAME available."
+fi
+
+info "Give $SCRIPT_NAME it a star on Github if you like it! 🙏"
+success "${bold}Installation completed! 🎉${normal}"
+eval "$SCRIPT_NAME help"
