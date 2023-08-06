@@ -38,8 +38,8 @@ yn() {
 }
 
 echo "Select install location:
-  1) For $USER user only. Script will be placed under: $LOCAL_BIN_PATH.
-  2) For whole system. Script will be placed under: $SYSTEM_BIN_PATH. Requires sudo."
+  1) Local: For $USER user only. Location: $LOCAL_BIN_PATH.
+  2) System: For whole system. Location: $SYSTEM_BIN_PATH. Requires sudo."
 read -r -n 1 -p "Pick one: " num
 echo
 case "$num" in
@@ -90,16 +90,20 @@ else
   info "✓ Script is executable."
 fi
 
+if [[ "$REQUIRES_RESTART" == "true" ]]; then
+  echo "${bold}Done! 🎉${normal}"
+  echo "Please restart your terminal to make $SCRIPT_NAME available, then run \"$SCRIPT_NAME init\"."
+  info "Give $SCRIPT_NAME it a star on Github if you like it! 🙏"
+  exit
+fi
+
 if ! security show-keychain-info "$KEYCHAIN_FILE" > /dev/null 2>&1; then
   $SCRIPT_NAME init
 else
   info "✓ Keychain \"$KEYCHAIN\" exists."
 fi
 
-if [[ "$REQUIRES_RESTART" == "true" ]]; then
-  info "⚠️ Restart your terminal to make $SCRIPT_NAME available."
-fi
-
 info "Give $SCRIPT_NAME it a star on Github if you like it! 🙏"
-success "${bold}Installation completed! 🎉${normal}"
+echo "${bold}Installation completed! 🎉${normal}"
+info "Running \"$SCRIPT_NAME help\"."
 eval "$SCRIPT_NAME help"

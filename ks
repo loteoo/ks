@@ -1,39 +1,51 @@
 #!/usr/bin/env bash
 
 add() {
-  key="${1:?'Please provide the name of the secret to add.'}"
-  value="${2:?'Please provide the value to encrypt.'}"
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to add."
+  fi
+  if [[ -n "${2+x}" ]]; then
+    value="$2"
+  elif [[ ! -t 0 ]]; then
+    value="$(cat)"
+  else
+    throw "No secret specified. Please provide the value to encrypt."
+  fi
   security add-generic-password \
     -a "$USER" \
     -D secret \
-    -s "$key" \
+    -s "$1" \
     -w "$value" \
     "$KEYCHAIN_FILE" \
     2> /dev/null \
-    || throw "Secret \"$key\" already exists."
-  success "Secret \"$key\" added."
+    || throw "Secret \"$1\" already exists."
+  success "Secret \"$1\" added."
 }
 
 show() {
-  key="${1:?'Please provide the name of the secret to show.'}"
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to show."
+  fi
   security find-generic-password \
     -a "$USER" \
-    -s "$key" \
+    -s "$1" \
     -w \
     "$KEYCHAIN_FILE" \
     2> /dev/null \
-    || throw "Secret \"$key\" was not found in keychain."
+    || throw "Secret \"$1\" was not found in keychain."
 }
 
 rm() {
-  key="${1:?'Please provide the name of the secret to remove.'}"
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to remove."
+  fi
   security delete-generic-password  \
     -a "$USER" \
-    -s "$key" \
+    -s "$1" \
     "$KEYCHAIN_FILE" \
     > /dev/null 2>&1 \
-    || throw "Secret \"$key\" was not found in keychain."
-  success "Secret \"$key\" deleted."
+    || throw "Secret \"$1\" was not found in keychain."
+  success "Secret \"$1\" deleted."
 }
 
 ls() {
@@ -41,7 +53,7 @@ ls() {
     | grep 0x00000007 \
     | awk -F= '{print $2}' \
     | tr -d \" \
-    || throw "Keychain is empty."
+    || throw "No secrets found. Keychain is empty."
 }
 
 init() {

@@ -19,7 +19,7 @@ This is for you if:
 Use the install script for an easy interactive installation:
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install | bash
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install)"
 ```
 
 This script is safe to re-run multiple times if your installation becomes corrupted for some reason.
@@ -75,23 +75,22 @@ Commands:
   help               Show this help text
 ```
 
-### Adding a secret
+### Add secrets
 
 ```sh
 ks add my-secret 'password123'
-```
+# Note that this will add it to your shell history.
 
-> Note that this will add it to your shell history.
-
-Add secret from clipboard:
-
-```sh
+# Add a secret from your clipboard:
 pbpaste | ks add my-secret
 # or
 ks add my-secret "$(pbpaste)"
+
+# Generate high-entropy secret:
+openssl rand -hex 24 | ks add my-secret
 ```
 
-### Revealing a secret
+### Retrieve secrets
 
 ```sh
 ks show my-secret
@@ -100,13 +99,13 @@ ks show my-secret
 ks show my-secret | pbcopy
 ```
 
-### Deleting a secret
+### Delete secrets
 
 ```sh
 ks rm my-secret
 ```
 
-### Listing secrets
+### List secrets
 
 ```sh
 ks ls
