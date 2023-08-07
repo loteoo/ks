@@ -53,7 +53,7 @@ if [[ ! -d "$BIN_PATH" ]]; then
   if ! yn "Need to create $BIN_PATH. Continue?"; then
     throw "Installation aborted."
   fi
-  mkdir "$BIN_PATH"
+  mkdir -p "$BIN_PATH"
   success "==> Created $BIN_PATH folder."
 else
   info "✓ Directory exists."
