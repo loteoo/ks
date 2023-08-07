@@ -6,6 +6,8 @@ It's a tiny, straightforward CLI that let's you securely store and retrieve encr
 
 It's built as a small wrapper around the native `security` command, so it's fast, works offline and is fully interoperable with the Keychain Access app. This way you can also manage your secrets via the UI as well.
 
+https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb8
+
 This is for you if:
 
 - You're on macOS.
