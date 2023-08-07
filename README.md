@@ -1,10 +1,10 @@
 # Keychain Secrets manager
 
-Secrets manager for the command-line powered by the Keychain tools already available on macOS systems.
+Command-line secrets manager powered by the Keychain tools already available on macOS systems.
 
 It's a tiny, straightforward CLI that let's you securely store and retrieve encrypted secrets without any additional third parties involved.
 
-It's built as a small wrapper around the native `security` command, so it's fast, works offline and is fully interoperable with the Keychain Access app. This way you can also manage your secrets via the UI as well.
+It's built as a small wrapper around the native `security` command, so it's fast, works offline and is fully interoperable with the Keychain Access app. This way you can also manage your secrets via a UI as well.
 
 This is for you if:
 
@@ -22,13 +22,13 @@ https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb
 
 ## Installation
 
-Use the install script for an easy interactive installation:
+Use the install script for an automated, interactive installation:
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install)"
 ```
 
-This script is safe to re-run multiple times if your installation becomes corrupted for some reason.
+This script is safe to re-run multiple times if your installation becomes corrupted for some reason, or to update to the latest version.
 
 I'll eventually publish this on homebrew.
 
@@ -37,7 +37,7 @@ I'll eventually publish this on homebrew.
 1. Download the script file from github.
 2. Place it into an executable directory that's in your $PATH. For instance, `~/.local/bin/ks`
 3. Make sure the file is executable. `chmod +x ~/path/to/ks`
-4. Create a Keychain in the Keychain Access app called `Secrets`, or which ever name your `KS_DEFAULT_KEYCHAIN` environment variable is set to.
+4. Run `ks init` to create a first keychain.
 
 </details>
 
@@ -59,7 +59,7 @@ Make sure the file is executable. `chmod +x ~/path/to/ks`.
 
 </details>
 
-You can optionally add basic completion by adding `source <(ks completion)` in your shell profile.
+You can also setup basic completion by adding `source <(ks completion)` in your shell profile.
 
 ## Usage
 
@@ -148,3 +148,7 @@ ks -k ProjectA show some-password
 ks -k ProjectB show some-password
 # hunter2
 ```
+
+PRs, issues, comments and ideas are appreciated.
+
+Give the repo a star to show your support! ❤️
