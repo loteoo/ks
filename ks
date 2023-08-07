@@ -13,8 +13,8 @@ add() {
   fi
   security add-generic-password \
     -a "$USER" \
-    -D secret \
     -s "$1" \
+    -D secret \
     -w "$value" \
     "$KEYCHAIN_FILE" \
     2> /dev/null \
@@ -26,13 +26,27 @@ show() {
   if [[ -z ${1+x} ]]; then
     throw "No key specified. Please provide the name of the secret to show."
   fi
-  security find-generic-password \
-    -a "$USER" \
-    -s "$1" \
-    -w \
-    "$KEYCHAIN_FILE" \
-    2> /dev/null \
-    || throw "Secret \"$1\" was not found in keychain."
+  raw_pass="$(
+    security find-generic-password \
+      -a "$USER" \
+      -s "$1" \
+      -g \
+      "$KEYCHAIN_FILE" \
+      2>&1 1>/dev/null \
+      tail -1 \
+      || throw "Secret \"$1\" was not found in keychain."
+  )"
+  raw_pass="${raw_pass#password: }"
+  if [[ "$raw_pass" = "\""*"\"" ]]; then
+    raw_pass="${raw_pass%\"}"
+    raw_pass="${raw_pass#\"}"
+    echo "$raw_pass"
+  else
+    echo "$raw_pass" \
+      | cut -d' ' -f1 \
+      | xxd -r -p
+    echo
+  fi
 }
 
 rm() {
