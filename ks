@@ -158,7 +158,7 @@ if [[ "$(type -t "${1:-}")" == "function" ]]; then
   if [[ "add show rm ls" = *"$1"* ]]; then
     init
   fi
-  $1 "${@:2}"
+  "$@"
 else
   throw "$(help)"
 fi
