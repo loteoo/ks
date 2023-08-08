@@ -21,7 +21,7 @@ info() {
 
 success() {
   # shellcheck disable=SC2145
-  echo "${cyan}$@${normal}"
+  echo "${cyan}==> $@${normal}"
 }
 
 throw() {
@@ -36,6 +36,31 @@ yn() {
     return 1
   fi
 }
+
+# Validate macOS
+if [[ "$OSTYPE" != "darwin"* ]]; then
+  throw "Unfortunately $SCRIPT_NAME is for macOS only as it relies on it's native keychain features. Installation aborted."
+else
+  info "✓ On macOS."
+fi
+
+# Validate security command
+if ! command -v security &> /dev/null; then
+  throw "\"security\" command not available. Installation aborted."
+else
+  info "✓ \"security\" is available."
+fi
+
+# Warn reinstall
+if command -v $SCRIPT_NAME &> /dev/null; then
+  if ! yn "$SCRIPT_NAME already exists. Remove and reinstall?"; then
+    throw "Installation aborted."
+  fi
+  existing="$(which $SCRIPT_NAME)"
+  rm "$existing"
+  success "Removed old install."
+fi
+
 
 echo "Select install location:
   1) Local: For $USER user only. Location: $LOCAL_BIN_PATH.
@@ -54,7 +79,7 @@ if [[ ! -d "$BIN_PATH" ]]; then
     throw "Installation aborted."
   fi
   mkdir -p "$BIN_PATH"
-  success "==> Created $BIN_PATH folder."
+  success "Created $BIN_PATH folder."
 else
   info "✓ Directory exists."
 fi
@@ -66,26 +91,20 @@ if ! echo "$PATH" | tr ':' $'\n' | grep -q "$BIN_PATH"; then
   fi
   sudo bash -c "echo '$BIN_PATH' >> /etc/paths"
   REQUIRES_RESTART="true"
-  success "==> $BIN_PATH was added to \$PATH."
+  success "$BIN_PATH was added to \$PATH."
 else
   info "✓ Directory is in \$PATH."
 fi
 
 SCRIPT_PATH="$BIN_PATH/$SCRIPT_NAME"
 
-if [[ -f "$SCRIPT_PATH" ]]; then
-  if ! yn "File $SCRIPT_PATH already exists. Replace?"; then
-    throw "Installation aborted."
-  fi
-fi
-
 info "Downloading $SCRIPT_DOWNLOAD_URL..."
 curl -fsSL "$SCRIPT_DOWNLOAD_URL" -o "$SCRIPT_PATH"
-success "==> Script added under $SCRIPT_PATH"
+success "Script added under $SCRIPT_PATH"
 
 if [[ ! -x "$SCRIPT_PATH" ]]; then
   chmod +x "$SCRIPT_PATH"
-  success "==> Script made executable."
+  success "Script made executable."
 else
   info "✓ Script is executable."
 fi
