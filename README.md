@@ -25,7 +25,6 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install)"
 
 This script is safe to re-run multiple times if your installation becomes corrupted for some reason, or to update to the latest version.
 
-I'll eventually publish this on homebrew.
 
 <details><summary>Manual installation</summary>
 
@@ -156,6 +155,10 @@ This is for you if:
 - You want to leverage OS functionnality.
 
 > Bonus: You don't like the idea of relying on a HTTP request, a third party server and a credit card subscription to access your secrets.
+
+## homebrew
+
+Unfortunately, this repo is not yet [notable enough](https://github.com/Homebrew/homebrew-core/pull/139344) for homebrew, but if it ever becomes popular enough, I will resume publishing it there.
 
 ---
 
