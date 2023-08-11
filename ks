@@ -123,7 +123,7 @@ init() {
 # ===================
 set -euo pipefail
 IFS=$'\n\t'
-normal=$(tput sgr0)
+normal=$'\e[0m'
 dimmed=$'\e[2m'
 cyan=$'\e[96m'
 
