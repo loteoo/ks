@@ -59,7 +59,7 @@ rm() {
     "$KEYCHAIN_FILE" \
     > /dev/null 2>&1 \
     || throw "Secret \"$1\" was not found in keychain."
-  success "Secret \"$1\" deleted."
+  success "Secret \"$1\" removed."
 }
 
 ls() {
@@ -70,21 +70,40 @@ ls() {
     || throw "No secrets found. Keychain is empty."
 }
 
+rand() {
+  size="${1:-32}"
+  secret="$(openssl rand -hex "$(((size+1) / 2))")"
+  echo "${secret:0:$size}"
+}
+
 init() {
   maybe_error="$(cat <(security show-keychain-info "$KEYCHAIN_FILE" 2>&1))"
   not_found_error="The specified keychain could not be found"
   if [[ "$maybe_error" == *"SecKeychainCopySettings"* ]]; then
     if [[ "$maybe_error" == *"$not_found_error"* ]]; then
-      if ! yn "Keychain \"$KEYCHAIN\" does not exist. Create it?"; then
+      if ! yn "The \"$KEYCHAIN\" keychain does not exist. Do you want to create it?"; then
         throw "Aborted."
       fi
       if [[ "$KEYCHAIN" =~ [^a-zA-Z0-9_-] ]]; then
         throw "Invalid keychain name. Alphanumeric with dashes and underscores only."
       fi
       echo "Choose a password for the keychain. You can change it later via the Keychain Access app."
-      read -rsp "Password: " pass
-      echo
-      security create-keychain -p "$pass" "$KEYCHAIN_FILE"
+      while true; do
+        read -rsp "Password: " password
+        echo
+        if [[ "${#password}" -lt "3" ]]; then
+          info "Passwords is too short".
+          continue
+        fi
+        read -rsp "Confirm password: " confirm_password
+        echo
+        if [[ "$password" != "$confirm_password" ]]; then
+          info "Passwords don't match".
+          continue
+        fi
+        break
+      done
+      security create-keychain -p "$password" "$KEYCHAIN_FILE"
       success "Keychain \"$KEYCHAIN\" created."
       if yn "Register in Keychain Access app?"; then
         eval "security list-keychains -s $(security default-keychain) $(security list-keychains | xargs) $HOME/Library/Keychains/$KEYCHAIN_FILE"
@@ -92,6 +111,10 @@ init() {
       fi
     else
       throw "Could not access the \"$KEYCHAIN\" keychain."
+    fi
+  else
+    if [[ "${1:-}" != '-q' ]]; then
+      info "Keychain \"$KEYCHAIN\" already exists."
     fi
   fi
 }
@@ -101,6 +124,7 @@ init() {
 set -euo pipefail
 IFS=$'\n\t'
 normal=$(tput sgr0)
+dimmed=$'\e[2m'
 cyan=$'\e[96m'
 
 KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
@@ -113,17 +137,23 @@ Usage:
   ks [-k keychain] <action> [...opts]
 
 Commands:
-  add <key> <value>  Add an encrypted secret
-  show <key>         Decrypt and reveal a secret
-  rm <key>           Remove a secret
-  ls                 List secret keys
-  init               Create the specified Keychain
-  help               Show this help text
+  add <key> [value]   Add an encrypted secret
+  show <key>          Decrypt and reveal a secret
+  rm <key>            Remove secret from keychain
+  ls                  List secrets in keychain
+  rand [size]         Generate random secret
+  init                Initialize selected keychain
+  help                Show this help text
 EOT
 }
 
 completion() {
   echo "complete -W \"add show rm ls help\" ks"
+}
+
+info() {
+  # shellcheck disable=SC2145
+  echo "${dimmed}$@${normal}" 1>&2
 }
 
 success() {
@@ -132,6 +162,7 @@ success() {
 }
 
 throw() {
+  # shellcheck disable=SC2145
   echo "$@" 1>&2
   exit 1
 }
@@ -156,7 +187,7 @@ KEYCHAIN_FILE="$KEYCHAIN.keychain"
 
 if [[ "$(type -t "${1:-}")" == "function" ]]; then
   if [[ "add show rm ls" = *"$1"* ]]; then
-    init
+    init -q
   fi
   "$@"
 else

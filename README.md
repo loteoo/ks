@@ -4,15 +4,10 @@ Command-line secrets manager powered by the Keychain tools already available on 
 
 It's a tiny, straightforward CLI that let's you securely store and retrieve encrypted secrets without any additional third parties involved.
 
-It's built as a small wrapper around the native `security` command, so it's fast, works offline and is fully interoperable with the Keychain Access app. This way you can also manage your secrets via a UI as well.
-
-This is for you if:
-
-- You're on macOS.
-- You want to store and retrieve secrets using simple commands.
-- You like leveraging native OS functionnality.
-
-> Bonus: You don't like the idea of relying on HTTP requests, a third party company and a credit card subscription to manage secrets.
+It's built as a small wrapper around the native `security` command, so it's fast, secure, works offline and is fully interoperable with macOS keychains, which give you:
+- A nice, built-in UI to manage your secrets ([Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) app).
+- Optional backups, syncing and sharing with [iCloud Keychain](https://support.apple.com/en-ca/HT204085).
+- Integration with some browsers and other keychain-compatible software.
 
 <details><summary>Basic demo</summary>
 
@@ -59,7 +54,7 @@ Make sure the file is executable. `chmod +x ~/path/to/ks`.
 
 </details>
 
-You can also setup basic completion by adding `source <(ks completion)` in your shell profile.
+You can also setup basic completions by adding `source <(ks completion)` to your shell profile.
 
 ## Usage
 
@@ -73,12 +68,13 @@ Usage:
   ks [-k keychain] <action> [...opts]
 
 Commands:
-  add <key> <value>  Add an encrypted secret
-  show <key>         Decrypt and reveal a secret
-  rm <key>           Remove a secret
-  ls                 List secret keys
-  init               Create the specified Keychain
-  help               Show this help text
+  add <key> [value]   Add an encrypted secret
+  show <key>          Decrypt and reveal a secret
+  rm <key>            Remove secret from keychain
+  ls                  List secrets in keychain
+  rand [size]         Generate random secret
+  init                Initialize selected keychain
+  help                Show this help text
 ```
 
 ### Add secrets
@@ -93,7 +89,9 @@ pbpaste | ks add my-secret
 ks add my-secret "$(pbpaste)"
 
 # Generate high-entropy secret:
-openssl rand -hex 24 | ks add my-secret
+ks rand | ks add my-secret
+# or
+ks add my-secret "$(ks rand)"
 ```
 
 ### Retrieve secrets
@@ -127,7 +125,7 @@ By default, ks uses the `Secrets` keychain.
 You can change this permanently by exporting a `KS_DEFAULT_KEYCHAIN` environment variable in your shell profile.
 Ex: `export KS_DEFAULT_KEYCHAIN="AlternateKeychain"`
 
-If you have multiple keychains, you can pick them on a per-command basis by using the `-k` argument right after the ks command.
+You can also work with multiple keychains with ks. You can pick them on a per-command basis by using the `-k` argument right after the ks command.
 
 This allows you to pick from which keychain you want to run the ks commands on.
 
@@ -149,6 +147,18 @@ ks -k ProjectB show some-password
 # hunter2
 ```
 
-PRs, issues, comments and ideas are appreciated.
+## Who is this for
 
-Give the repo a star to show your support! ❤️
+This is for you if:
+
+- You're on macOS.
+- You want to store and retrieve secrets using simple commands.
+- You want to leverage OS functionnality.
+
+> Bonus: You don't like the idea of relying on a HTTP request, a third party server and a credit card subscription to access your secrets.
+
+---
+
+PRs, issues, comments and ideas are welcome.
+
+Give the repo a star if you like this! ❤️
