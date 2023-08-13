@@ -1,4 +1,52 @@
 #!/usr/bin/env bash
+set -euo pipefail
+IFS=$'\n\t'
+
+# Main commands
+# ===============
+
+init() {
+  maybe_error="$(cat <(security show-keychain-info "$KEYCHAIN_FILE" 2>&1))"
+  not_found_error="The specified keychain could not be found"
+  if [[ "$maybe_error" == *"SecKeychainCopySettings"* ]]; then
+    if [[ "$maybe_error" == *"$not_found_error"* ]]; then
+      if ! yn "The \"$KEYCHAIN\" keychain does not exist. Do you want to create it?"; then
+        throw "Aborted."
+      fi
+      if [[ "$KEYCHAIN" =~ [^a-zA-Z0-9_-] ]]; then
+        throw "Invalid keychain name. Alphanumeric with dashes and underscores only."
+      fi
+      echo "Choose a password for the keychain. You can change it later via the Keychain Access app."
+      while true; do
+        read -rsp "Password: " password
+        echo
+        if [[ "${#password}" -lt "3" ]]; then
+          info "Passwords is too short".
+          continue
+        fi
+        read -rsp "Confirm password: " confirm_password
+        echo
+        if [[ "$password" != "$confirm_password" ]]; then
+          info "Passwords don't match".
+          continue
+        fi
+        break
+      done
+      security create-keychain -p "$password" "$KEYCHAIN_FILE"
+      success "Keychain \"$KEYCHAIN\" created."
+      if yn "Register in Keychain Access app?"; then
+        eval "security list-keychains -s $(security default-keychain) $(security list-keychains | xargs) $HOME/Library/Keychains/$KEYCHAIN_FILE"
+        success "Keychain \"$KEYCHAIN\" added to Keychain Access app."
+      fi
+    else
+      throw "Could not access the \"$KEYCHAIN\" keychain."
+    fi
+  else
+    if [[ "${1:-}" != '-q' ]]; then
+      info "Keychain \"$KEYCHAIN\" already exists."
+    fi
+  fi
+}
 
 add() {
   if [[ -z ${1+x} ]]; then
@@ -76,65 +124,18 @@ rand() {
   echo "${secret:0:$size}"
 }
 
-init() {
-  maybe_error="$(cat <(security show-keychain-info "$KEYCHAIN_FILE" 2>&1))"
-  not_found_error="The specified keychain could not be found"
-  if [[ "$maybe_error" == *"SecKeychainCopySettings"* ]]; then
-    if [[ "$maybe_error" == *"$not_found_error"* ]]; then
-      if ! yn "The \"$KEYCHAIN\" keychain does not exist. Do you want to create it?"; then
-        throw "Aborted."
-      fi
-      if [[ "$KEYCHAIN" =~ [^a-zA-Z0-9_-] ]]; then
-        throw "Invalid keychain name. Alphanumeric with dashes and underscores only."
-      fi
-      echo "Choose a password for the keychain. You can change it later via the Keychain Access app."
-      while true; do
-        read -rsp "Password: " password
-        echo
-        if [[ "${#password}" -lt "3" ]]; then
-          info "Passwords is too short".
-          continue
-        fi
-        read -rsp "Confirm password: " confirm_password
-        echo
-        if [[ "$password" != "$confirm_password" ]]; then
-          info "Passwords don't match".
-          continue
-        fi
-        break
-      done
-      security create-keychain -p "$password" "$KEYCHAIN_FILE"
-      success "Keychain \"$KEYCHAIN\" created."
-      if yn "Register in Keychain Access app?"; then
-        eval "security list-keychains -s $(security default-keychain) $(security list-keychains | xargs) $HOME/Library/Keychains/$KEYCHAIN_FILE"
-        success "Keychain \"$KEYCHAIN\" added to Keychain Access app."
-      fi
-    else
-      throw "Could not access the \"$KEYCHAIN\" keychain."
-    fi
-  else
-    if [[ "${1:-}" != '-q' ]]; then
-      info "Keychain \"$KEYCHAIN\" already exists."
-    fi
-  fi
-}
 
-# Meta stuff...
-# ===================
-set -euo pipefail
-IFS=$'\n\t'
-normal=$'\e[0m'
-dimmed=$'\e[2m'
-cyan=$'\e[96m'
+# Meta commands
+# ===============
 
-KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
+VERSION="0.2.1"
 
 help() {
   cat << EOT
-Keychain Secrets manager
+Keychain Secrets manager v$VERSION
 
 Usage:
-  ks [-k keychain] <action> [...opts]
+  ks [-k keychain] <command> [options]
 
 Commands:
   add <key> [value]   Add an encrypted secret
@@ -144,29 +145,39 @@ Commands:
   rand [size]         Generate random secret
   init                Initialize selected keychain
   help                Show this help text
+  version             Print version
 EOT
+}
+
+version () {
+  echo "$VERSION"
 }
 
 completion() {
   echo "complete -W \"add show rm ls help\" ks"
 }
 
+
+# Shared utilities
+# ==================
+
+normal=$'\e[0m'
+dimmed=$'\e[2m'
+cyan=$'\e[96m'
+
 info() {
   # shellcheck disable=SC2145
   echo "${dimmed}$@${normal}" 1>&2
 }
-
 success() {
   # shellcheck disable=SC2145
   echo "${cyan}✓ $@${normal}"
 }
-
 throw() {
   # shellcheck disable=SC2145
   echo "$@" 1>&2
   exit 1
 }
-
 yn() {
   read -r -n 1 -p "$1 [y/n]: " yn
   echo
@@ -175,6 +186,11 @@ yn() {
   fi
 }
 
+
+# Parse CLI shared options
+# ==========================
+
+KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
 while getopts "k:" arg; do
   case $arg in
     k) KEYCHAIN="$OPTARG";;
@@ -182,9 +198,11 @@ while getopts "k:" arg; do
   esac
 done
 shift $((OPTIND - 1))
-
 KEYCHAIN_FILE="$KEYCHAIN.keychain"
 
+
+# Execute sub-command
+# =====================
 if [[ "$(type -t "${1:-}")" == "function" ]]; then
   if [[ "add show rm ls" = *"$1"* ]]; then
     init -q
