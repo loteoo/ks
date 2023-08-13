@@ -1,9 +1,93 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
+VERSION="0.3.0"
 
-# Main commands
-# ===============
+# Commands
+# ==========
+
+add() {
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to add."
+  fi
+  if [[ -n "${2+x}" ]]; then
+    value="$2"
+  elif [[ ! -t 0 ]]; then
+    value="$(cat)"
+  else
+    throw "No secret specified. Please provide the value to encrypt."
+  fi
+  security add-generic-password \
+    -a "$USER" \
+    -s "$1" \
+    -D secret \
+    -w "$value" \
+    "$KEYCHAIN_FILE" \
+    2> /dev/null \
+    || throw "Secret \"$1\" already exists."
+  success "Secret \"$1\" added."
+}
+
+show() {
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to show."
+  fi
+  raw_pass="$(
+    security find-generic-password \
+      -a "$USER" \
+      -s "$1" \
+      -g \
+      "$KEYCHAIN_FILE" \
+      2>&1 1>/dev/null \
+      tail -1 \
+      || throw "Secret \"$1\" was not found in keychain."
+  )"
+  raw_pass="${raw_pass#password: }"
+  if [[ "$raw_pass" = "\""*"\"" ]]; then
+    raw_pass="${raw_pass%\"}"
+    raw_pass="${raw_pass#\"}"
+    echo -n "$raw_pass"
+  else
+    echo "$raw_pass" \
+      | cut -d' ' -f1 \
+      | xxd -r -p
+  fi
+}
+
+cp() {
+  show "$@" | pbcopy
+  success "Secret \"$1\" copied to clipboard."
+}
+
+rm() {
+  if [[ -z ${1+x} ]]; then
+    throw "No key specified. Please provide the name of the secret to remove."
+  fi
+  security delete-generic-password  \
+    -a "$USER" \
+    -s "$1" \
+    "$KEYCHAIN_FILE" \
+    > /dev/null 2>&1 \
+    || throw "Secret \"$1\" was not found in keychain."
+  success "Secret \"$1\" removed."
+}
+
+ls() {
+  security dump-keychain "$KEYCHAIN_FILE" \
+    | grep 0x00000007 \
+    | awk -F= '{print $2}' \
+    | tr -d \" \
+    || throw "No secrets found. Keychain is empty."
+}
+
+rand() {
+  size="${1:-32}"
+  if ! [[ $size =~ ^[0-9]+$ ]] ; then
+    throw "Size \"$size\" is not a valid integer."
+  fi
+  secret="$(openssl rand -hex "$(((size+1) / 2))")"
+  echo "${secret:0:$size}"
+}
 
 init() {
   maybe_error="$(cat <(security show-keychain-info "$KEYCHAIN_FILE" 2>&1))"
@@ -48,88 +132,6 @@ init() {
   fi
 }
 
-add() {
-  if [[ -z ${1+x} ]]; then
-    throw "No key specified. Please provide the name of the secret to add."
-  fi
-  if [[ -n "${2+x}" ]]; then
-    value="$2"
-  elif [[ ! -t 0 ]]; then
-    value="$(cat)"
-  else
-    throw "No secret specified. Please provide the value to encrypt."
-  fi
-  security add-generic-password \
-    -a "$USER" \
-    -s "$1" \
-    -D secret \
-    -w "$value" \
-    "$KEYCHAIN_FILE" \
-    2> /dev/null \
-    || throw "Secret \"$1\" already exists."
-  success "Secret \"$1\" added."
-}
-
-show() {
-  if [[ -z ${1+x} ]]; then
-    throw "No key specified. Please provide the name of the secret to show."
-  fi
-  raw_pass="$(
-    security find-generic-password \
-      -a "$USER" \
-      -s "$1" \
-      -g \
-      "$KEYCHAIN_FILE" \
-      2>&1 1>/dev/null \
-      tail -1 \
-      || throw "Secret \"$1\" was not found in keychain."
-  )"
-  raw_pass="${raw_pass#password: }"
-  if [[ "$raw_pass" = "\""*"\"" ]]; then
-    raw_pass="${raw_pass%\"}"
-    raw_pass="${raw_pass#\"}"
-    echo "$raw_pass"
-  else
-    echo "$raw_pass" \
-      | cut -d' ' -f1 \
-      | xxd -r -p
-    echo
-  fi
-}
-
-rm() {
-  if [[ -z ${1+x} ]]; then
-    throw "No key specified. Please provide the name of the secret to remove."
-  fi
-  security delete-generic-password  \
-    -a "$USER" \
-    -s "$1" \
-    "$KEYCHAIN_FILE" \
-    > /dev/null 2>&1 \
-    || throw "Secret \"$1\" was not found in keychain."
-  success "Secret \"$1\" removed."
-}
-
-ls() {
-  security dump-keychain "$KEYCHAIN_FILE" \
-    | grep 0x00000007 \
-    | awk -F= '{print $2}' \
-    | tr -d \" \
-    || throw "No secrets found. Keychain is empty."
-}
-
-rand() {
-  size="${1:-32}"
-  secret="$(openssl rand -hex "$(((size+1) / 2))")"
-  echo "${secret:0:$size}"
-}
-
-
-# Meta commands
-# ===============
-
-VERSION="0.2.1"
-
 help() {
   cat << EOT
 Keychain Secrets manager v$VERSION
@@ -138,14 +140,15 @@ Usage:
   ks [-k keychain] <command> [options]
 
 Commands:
-  add <key> [value]   Add an encrypted secret
-  show <key>          Decrypt and reveal a secret
-  rm <key>            Remove secret from keychain
-  ls                  List secrets in keychain
-  rand [size]         Generate random secret
-  init                Initialize selected keychain
-  help                Show this help text
-  version             Print version
+  add <key> [value]     Add an encrypted secret
+  show <key>            Decrypt and reveal a secret
+  cp <key>              Copy secret to clipboard
+  rm <key>              Remove secret from keychain
+  ls                    List secrets in keychain
+  rand [size]           Generate random secret
+  init                  Initialize selected keychain
+  help                  Show this help text
+  version               Print version
 EOT
 }
 
@@ -154,13 +157,12 @@ version () {
 }
 
 completion() {
-  echo "complete -W \"add show rm ls help\" ks"
+  echo "complete -W \"add show cp rm ls rand init help version\" ks"
 }
 
 
-# Shared utilities
-# ==================
-
+# Utilities
+# ===========
 normal=$'\e[0m'
 dimmed=$'\e[2m'
 cyan=$'\e[96m'
@@ -204,7 +206,7 @@ KEYCHAIN_FILE="$KEYCHAIN.keychain"
 # Execute sub-command
 # =====================
 if [[ "$(type -t "${1:-}")" == "function" ]]; then
-  if [[ "add show rm ls" = *"$1"* ]]; then
+  if [[ "add show cp rm ls" = *"$1"* ]]; then
     init -q
   fi
   "$@"
