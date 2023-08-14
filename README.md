@@ -17,14 +17,22 @@ https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb
 
 ## Installation
 
-Use the install script for an automated, interactive installation:
+#### Install script
+
+Use the install script for an easy, interactive installation by running this command:
 
 ```sh
 bash -c "$(curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install)"
 ```
 
-This script is safe to re-run multiple times if your installation becomes corrupted for some reason, or to update to the latest version.
+#### Homebrew
 
+You can also install ks using homebrew:
+
+```sh
+brew tap loteoo/formulas
+brew install ks
+```
 
 <details><summary>Manual installation</summary>
 
@@ -64,16 +72,18 @@ $ ks help
 Keychain Secrets manager
 
 Usage:
-  ks [-k keychain] <action> [...opts]
+  ks [-k keychain] <command> [options]
 
 Commands:
-  add <key> [value]   Add an encrypted secret
-  show <key>          Decrypt and reveal a secret
-  rm <key>            Remove secret from keychain
-  ls                  List secrets in keychain
-  rand [size]         Generate random secret
-  init                Initialize selected keychain
-  help                Show this help text
+  add <key> [value]    Add an encrypted secret
+  show <key>           Decrypt and reveal a secret
+  cp <key>             Copy secret to clipboard
+  rm <key>             Remove secret from keychain
+  ls                   List secrets in keychain
+  rand [size]          Generate random secret
+  init                 Initialize selected keychain
+  help                 Show this help text
+  version              Print version
 ```
 
 ### Add secrets
@@ -96,10 +106,11 @@ ks add my-secret "$(ks rand)"
 ### Retrieve secrets
 
 ```sh
+# Print out secret to stdout
 ks show my-secret
 
-# Or to your clipboard:
-ks show my-secret | pbcopy
+# Copy secret to clipboard
+ks cp my-secret
 ```
 
 ### Remove secrets
@@ -155,10 +166,6 @@ This is for you if:
 - You want to leverage OS functionnality.
 
 > Bonus: You don't like the idea of relying on a HTTP request, a third party server and a credit card subscription to access your secrets.
-
-## homebrew
-
-Unfortunately, this repo is not yet [notable enough](https://github.com/Homebrew/homebrew-core/pull/139344) for homebrew, but if it ever becomes popular enough, I will resume publishing it there.
 
 ---
 

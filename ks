@@ -140,15 +140,15 @@ Usage:
   ks [-k keychain] <command> [options]
 
 Commands:
-  add <key> [value]     Add an encrypted secret
-  show <key>            Decrypt and reveal a secret
-  cp <key>              Copy secret to clipboard
-  rm <key>              Remove secret from keychain
-  ls                    List secrets in keychain
-  rand [size]           Generate random secret
-  init                  Initialize selected keychain
-  help                  Show this help text
-  version               Print version
+  add <key> [value]    Add an encrypted secret
+  show <key>           Decrypt and reveal a secret
+  cp <key>             Copy secret to clipboard
+  rm <key>             Remove secret from keychain
+  ls                   List secrets in keychain
+  rand [size]          Generate random secret
+  init                 Initialize selected keychain
+  help                 Show this help text
+  version              Print version
 EOT
 }
 
