@@ -5,9 +5,8 @@ VERSION="0.3.0"
 
 # Commands
 # ==========
-
 add() {
-  if [[ -z ${1+x} ]]; then
+  if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to add."
   fi
   if [[ -n "${2+x}" ]]; then
@@ -29,7 +28,7 @@ add() {
 }
 
 show() {
-  if [[ -z ${1+x} ]]; then
+  if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to show."
   fi
   raw_pass="$(
@@ -60,7 +59,7 @@ cp() {
 }
 
 rm() {
-  if [[ -z ${1+x} ]]; then
+  if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to remove."
   fi
   security delete-generic-password  \
@@ -82,7 +81,7 @@ ls() {
 
 rand() {
   size="${1:-32}"
-  if ! [[ $size =~ ^[0-9]+$ ]] ; then
+  if ! [[ "$size" =~ ^[0-9]+$ ]] ; then
     throw "Size \"$size\" is not a valid integer."
   fi
   secret="$(openssl rand -hex "$(((size+1) / 2))")"
@@ -105,7 +104,7 @@ init() {
         read -rsp "Password: " password
         echo
         if [[ "${#password}" -lt "3" ]]; then
-          info "Passwords is too short".
+          info "Password is too short".
           continue
         fi
         read -rsp "Confirm password: " confirm_password
@@ -171,15 +170,18 @@ info() {
   # shellcheck disable=SC2145
   echo "${dimmed}$@${normal}" 1>&2
 }
+
 success() {
   # shellcheck disable=SC2145
   echo "${cyan}✓ $@${normal}"
 }
+
 throw() {
   # shellcheck disable=SC2145
   echo "$@" 1>&2
   exit 1
 }
+
 yn() {
   read -r -n 1 -p "$1 [y/n]: " yn
   echo
@@ -191,10 +193,9 @@ yn() {
 
 # Parse CLI shared options
 # ==========================
-
 KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
 while getopts "k:" arg; do
-  case $arg in
+  case "$arg" in
     k) KEYCHAIN="$OPTARG";;
     *) throw "$(help)";;
   esac
@@ -203,8 +204,8 @@ shift $((OPTIND - 1))
 KEYCHAIN_FILE="$KEYCHAIN.keychain"
 
 
-# Execute sub-command
-# =====================
+# Execute sub-commands
+# ======================
 if [[ "$(type -t "${1:-}")" == "function" ]]; then
   if [[ "add show cp rm ls" = *"$1"* ]]; then
     init -q
