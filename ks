@@ -134,7 +134,7 @@ init() {
 
 help() {
   cat << EOT
-Keychain Secrets manager v$VERSION
+Keychain Secrets manager
 
 Usage:
   ks [-k keychain] <command> [options]
