@@ -33,7 +33,6 @@ show() {
   fi
   raw_pass="$(
     security find-generic-password \
-      -a "$USER" \
       -s "$1" \
       -g \
       "$KEYCHAIN_FILE" \
@@ -63,7 +62,6 @@ rm() {
     throw "No key specified. Please provide the name of the secret to remove."
   fi
   security delete-generic-password  \
-    -a "$USER" \
     -s "$1" \
     "$KEYCHAIN_FILE" \
     > /dev/null 2>&1 \
