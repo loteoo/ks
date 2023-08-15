@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-VERSION="0.3.0"
+VERSION="0.3.1"
 
 # Commands
 # ==========
@@ -72,11 +72,19 @@ rm() {
 }
 
 ls() {
-  security dump-keychain "$KEYCHAIN_FILE" \
-    | grep 0x00000007 \
-    | awk -F= '{print $2}' \
-    | tr -d \" \
-    || throw "No secrets found. Keychain is empty."
+  raw_list="$(
+    security dump-keychain "$KEYCHAIN_FILE" \
+      | grep '0x00000007' \
+      | cut -d'=' -f2 \
+      | tr -d '"' \
+      || throw "No secrets found. Keychain is empty."
+  )"
+  for item in $raw_list; do
+    if [[ "$item" == "0x"* ]]; then
+      item="$(echo "$item" | xxd -r -p)"
+    fi
+    echo "$item"
+  done
 }
 
 rand() {
