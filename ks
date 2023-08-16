@@ -1,11 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-VERSION="0.3.1"
+VERSION="0.4.0"
 
 # Commands
 # ==========
 add() {
+  kind="application password"
+  while getopts "n" arg; do
+    case "$arg" in
+      n) kind="secure note";;
+      *) throw "$(help)";;
+    esac
+  done
+  shift $((OPTIND - 1))
   if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to add."
   fi
@@ -14,12 +22,12 @@ add() {
   elif [[ ! -t 0 ]]; then
     value="$(cat)"
   else
-    throw "No secret specified. Please provide the value to encrypt."
+    throw "No value specified. Please provide a value by using the second argument or by piping from stdin."
   fi
   security add-generic-password \
     -a "$USER" \
     -s "$1" \
-    -D secret \
+    -D "$kind" \
     -w "$value" \
     "$KEYCHAIN_FILE" \
     2> /dev/null \
@@ -43,13 +51,21 @@ show() {
   raw_pass="${raw_pass#password: }"
   if [[ "$raw_pass" = "\""*"\"" ]]; then
     raw_pass="${raw_pass%\"}"
-    raw_pass="${raw_pass#\"}"
-    echo -n "$raw_pass"
+    password="${raw_pass#\"}"
   else
-    echo "$raw_pass" \
-      | cut -d' ' -f1 \
-      | xxd -r -p
+    password="$(
+      echo -n "$raw_pass" \
+        | cut -d' ' -f1 \
+        | xxd -r -p
+    )"
   fi
+  if [[ "$password" = "<?xml"* ]]; then
+    parsed_note="$(xmllint --xpath "/plist/dict/string/text()" <(echo "$password"))"
+    if [[ -n "$parsed_note" ]]; then
+      password="$parsed_note"
+    fi
+  fi
+  echo -n "$password"
 }
 
 cp() {
@@ -145,15 +161,15 @@ Usage:
   ks [-k keychain] <command> [options]
 
 Commands:
-  add <key> [value]    Add an encrypted secret
-  show <key>           Decrypt and reveal a secret
-  cp <key>             Copy secret to clipboard
-  rm <key>             Remove secret from keychain
-  ls                   List secrets in keychain
-  rand [size]          Generate random secret
-  init                 Initialize selected keychain
-  help                 Show this help text
-  version              Print version
+  add [-n] <key> [value]    Add a secret (-n for note)
+  show <key>                Decrypt and reveal a secret
+  cp <key>                  Copy secret to clipboard
+  rm <key>                  Remove secret from keychain
+  ls                        List secrets in keychain
+  rand [size]               Generate random secret
+  init                      Initialize selected keychain
+  help                      Show this help text
+  version                   Print version
 EOT
 }
 
