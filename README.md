@@ -101,6 +101,9 @@ ks add my-secret "$(pbpaste)"
 ks rand | ks add my-secret
 # or
 ks add my-secret "$(ks rand)"
+
+# Mark secret as a "note" to get a multi-line UI in Keychain Access app
+cat long-text.txt | ks add -n my-secret-text
 ```
 
 ### Retrieve secrets
