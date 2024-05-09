@@ -7,9 +7,11 @@ VERSION="0.4.0"
 # ==========
 add() {
   kind="application password"
-  while getopts "n" arg; do
+  generate_password=false
+  while getopts "ng" arg; do
     case "$arg" in
       n) kind="secure note";;
+      g) generate_password=true;;
       *) throw "$(help)";;
     esac
   done
@@ -21,6 +23,8 @@ add() {
     value="$2"
   elif [[ ! -t 0 ]]; then
     value="$(cat)"
+  elif $generate_password; then
+    value=$(openssl rand -base64 12)
   else
     throw "No value specified. Please provide a value by using the second argument or by piping from stdin."
   fi
@@ -161,7 +165,7 @@ Usage:
   ks [-k keychain] <command> [options]
 
 Commands:
-  add [-n] <key> [value]    Add a secret (-n for note)
+  add [-ng] <key> [value]    Add a secret (-n for note, -g to generate a random value)
   show <key>                Decrypt and reveal a secret
   cp <key>                  Copy secret to clipboard
   rm <key>                  Remove secret from keychain
