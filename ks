@@ -13,7 +13,6 @@ add() {
       *) throw "$(help)";;
     esac
   done
-  shift $((OPTIND - 1))
   if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to add."
   fi
