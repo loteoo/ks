@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-VERSION="0.4.0"
+VERSION="0.4.1"
 
 # Commands
 # ==========
