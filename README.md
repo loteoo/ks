@@ -1,6 +1,10 @@
-# Keychain Secrets manager
+<a href="https://millisecond.studio/">
+  <img src="https://cdn.thumbsmith.com/v1/u/loteoo/millisecond-github-banner.png?title=ks+-+Keychain+Secrets+manager&description=Command-line+secrets+manager+powered+by+macOS+keychains" alt="ks banner" />
+</a>
 
-Command-line secrets manager powered by the Keychain tools already available on macOS systems.
+---
+
+CLI secrets manager that uses the native Keychain tools already available on macOS systems.
 
 It's a tiny, straightforward CLI that let's you securely store and retrieve encrypted secrets without any additional third parties involved.
 
@@ -31,7 +35,7 @@ brew tap loteoo/formulas
 brew install ks
 ```
 
-<details><summary>Manual installation</summary>
+<details><summary>Manual installation (click to open)</summary>
 
 1. Download the script file from github.
 2. Place it into an executable directory that's in your $PATH. For instance, `~/.local/bin/ks`
@@ -40,7 +44,7 @@ brew install ks
 
 </details>
 
-<details><summary>Contributor installation</summary>
+<details><summary>Contributor installation (click to open)</summary>
 
 Delete any other instance of the `ks` script on your machine.
 
@@ -57,6 +61,8 @@ ln -s ~/path/to/repo/ks/ks ~/bin/ks
 Make sure the file is executable. `chmod +x ~/path/to/ks`.
 
 </details>
+
+Now you can `git pull` to get updates, modify your running installation and contribute easily.
 
 You can also setup basic completions by adding `source <(ks completion)` to your shell profile.
 
@@ -200,4 +206,6 @@ This is for you if:
 
 PRs, issues, comments and ideas are welcome.
 
-Give the repo a star if you like this! ❤️
+Give the repo a star if you like this!
+
+Crafted by [millisecond studio](https://millisecond.studio/) ❤️
