@@ -5,15 +5,12 @@ Command-line secrets manager powered by the Keychain tools already available on 
 It's a tiny, straightforward CLI that let's you securely store and retrieve encrypted secrets without any additional third parties involved.
 
 It's built as a small wrapper around the native `security` command, so it's fast, secure, works offline and is fully interoperable with macOS keychains, which give you:
+
 - A nice, built-in UI to manage your secrets ([Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) app).
-- Optional backups, syncing and sharing with [iCloud Keychain](https://support.apple.com/en-ca/HT204085).
+- Backup & syncing with iCloud, Google Drive, NextCloud, etc. [See iCloud example](#icloud-sync)
 - Integration with some browsers and other keychain-compatible software.
 
-<details><summary>Basic demo</summary>
-
 https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb8
-
-</details>
 
 ## Installation
 
@@ -159,6 +156,35 @@ ks -k ProjectA show some-password
 ks -k ProjectB show some-password
 # hunter2
 ```
+
+## iCloud sync
+
+You can backup & sync your keychains between computers using cloud syncing software paired with a symlink. Here's an example for iCloud.
+
+1. Create a keychain for syncing (Optional)
+
+By default, `ks` will create a `Secrets` keychain under `~/Library/Keychains/Secrets.keychain-db`. You can use this one for syncing, or create another one. Ex:
+
+```
+# Create a new keychain named iCloud
+ks -k iCloud init
+```
+
+2. Move the keychain to the iCloud directory
+
+```
+mv "/Users/$USER/Library/Keychains/iCloud.keychain-db" "/Users/$USER/Library/Mobile Documents/com~apple~CloudDocs/iCloud.keychain-db"
+```
+
+3. Create a symlink to the keychain under the `~/Library/Keychains/` directory
+
+```
+ln -s "/Users/$USER/Library/Mobile Documents/com~apple~CloudDocs/iCloud.keychain-db" "/Users/$USER/Library/Keychains/iCloud.keychain-db"
+```
+
+4. Repeat step 3 on every machine that needs syncing
+
+Wait for the file to sync, then recreate the symlink from step 3 on the new computer. Pro tip: you can create and delete a folder to force the refresh of iCloud.
 
 ## Who is this for
 
