@@ -1,18 +1,20 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-VERSION="0.4.1"
+VERSION="0.4.2"
 
 # Commands
 # ==========
 add() {
   kind="application password"
+  OPTIND=1
   while getopts "n" arg; do
     case "$arg" in
       n) kind="secure note";;
       *) throw "$(help)";;
     esac
   done
+  shift $((OPTIND - 1))
   if [[ -z "${1+x}" ]]; then
     throw "No key specified. Please provide the name of the secret to add."
   fi
@@ -154,7 +156,7 @@ init() {
 
 help() {
   cat << EOT
-Keychain Secrets manager
+Keychain Secrets manager v$(version)
 
 Usage:
   ks [-k keychain] <command> [options]
