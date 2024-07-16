@@ -2,6 +2,7 @@
 set -euo pipefail
 IFS=$'\n\t'
 VERSION="0.4.2"
+PROJECT_URL="https://github.com/loteoo/ks"
 
 # Commands
 # ==========
@@ -176,6 +177,7 @@ EOT
 
 version () {
   echo "$VERSION"
+  echo "$PROJECT_URL"
 }
 
 completion() {
