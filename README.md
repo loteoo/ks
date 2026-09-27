@@ -4,208 +4,134 @@
 
 ---
 
-CLI secrets manager that uses the native Keychain tools already available on macOS systems.
+`ks` is a macOS CLI for storing secrets in Keychain through Apple's `security` command. No account, no server, no third party: it works offline, and stores plain generic-password items that stay interoperable with the rest of macOS, which gives you:
 
-It's a tiny, straightforward CLI that let's you securely store and retrieve encrypted secrets without any additional third parties involved.
+- A built-in UI for your secrets, the [Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) app.
+- Backup and sync through iCloud, Google Drive, NextCloud, etc. See [iCloud sync](#icloud-sync).
 
-It's built as a small wrapper around the native `security` command, so it's fast, secure, works offline and is fully interoperable with macOS keychains, which give you:
+## Install
 
-- A nice, built-in UI to manage your secrets ([Keychain Access](https://support.apple.com/en-ca/guide/keychain-access/kyca1083/mac) app).
-- Backup & syncing with iCloud, Google Drive, NextCloud, etc. [See iCloud example](#icloud-sync)
-- Integration with some browsers and other keychain-compatible software.
-
-https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb8
-
-## Installation
-
-#### Install script
-
-Use the install script for an easy, interactive installation by running this command:
-
-```sh
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/install)"
-```
-
-#### Homebrew
-
-You can also install ks using homebrew:
+With Homebrew:
 
 ```sh
 brew tap loteoo/formulas
 brew install ks
 ```
 
-<details><summary>Manual installation (click to open)</summary>
-
-1. Download the script file from github.
-2. Place it into an executable directory that's in your $PATH. For instance, `~/.local/bin/ks`
-3. Make sure the file is executable. `chmod +x ~/path/to/ks`
-4. Run `ks init` to create a first keychain.
-
-</details>
-
-<details><summary>Contributor installation (click to open)</summary>
-
-Delete any other instance of the `ks` script on your machine.
-
-Clone this repo somewhere on your machine, then create a symlink in a bin folder to the script:
+Manual install:
 
 ```sh
-#         This directory should be in your executable PATH
-#                              /
-ln -s ~/path/to/repo/ks/ks ~/bin/ks
-#                        \
-#       This should point to the actual ks file
+mkdir -p "$HOME/.local/bin"
+curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/ks -o "$HOME/.local/bin/ks"
+chmod +x "$HOME/.local/bin/ks"
 ```
-
-Make sure the file is executable. `chmod +x ~/path/to/ks`.
-
-</details>
-
-Now you can `git pull` to get updates, modify your running installation and contribute easily.
-
-You can also setup basic completions by adding `source <(ks completion)` to your shell profile.
 
 ## Usage
 
-Use the `ks help` command to get an overview of the commands:
-
-```
-$ ks help
-Keychain Secrets manager
-
-Usage:
-  ks [-k keychain] <command> [options]
-
-Commands:
-  add [-n] <key> [value]    Add a secret (-n for note)
-  show <key>                Decrypt and reveal a secret
-  cp <key>                  Copy secret to clipboard
-  rm <key>                  Remove secret from keychain
-  ls                        List secrets in keychain
-  rand [size]               Generate random secret
-  init                      Initialize selected keychain
-  help                      Show this help text
-  version                   Print version
-```
-
-### Add secrets
+Run `ks help` for the command list.
 
 ```sh
-ks add my-secret 'password123'
-# ⚠️ Note that this will add it to your shell history. ⚠️
-
-# Add a secret from your clipboard:
-pbpaste | ks add my-secret
-# or
-ks add my-secret "$(pbpaste)"
-
-# Generate high-entropy secret:
-ks rand | ks add my-secret
-# or
-ks add my-secret "$(ks rand)"
-
-# Mark secret as a "note" to get a multi-line UI in Keychain Access app
-cat long-text.txt | ks add -n my-secret-text
-```
-
-### Retrieve secrets
-
-```sh
-# Print out secret to stdout
+ks init
+pbpaste | ks add my-api-key # Add from clipboard via stdin
+ks add my-secret secret123 # Warning: Most default shell configurations will save this in history
 ks show my-secret
-
-# Copy secret to clipboard
 ks cp my-secret
-```
-
-### Remove secrets
-
-```sh
-ks rm my-secret
-```
-
-### List secrets
-
-```sh
 ks ls
-
-# You can filter with grep:
-ks ls | grep 'prefix_'
+ks rm my-secret
+openssl rand -hex 32 | ks add my-secret # Generate & add secret
+openssl rand -hex 32 | ks update my-secret # Rotate secret
+ks show old-name | ks add new-name && ks rm old-name # Rename name in ks
 ```
 
-## Using multiple keychains
 
-By default, ks uses the `Secrets` keychain.
+### Keychains
 
-You can change this permanently by exporting a `KS_DEFAULT_KEYCHAIN` environment variable in your shell profile.
-Ex: `export KS_DEFAULT_KEYCHAIN="AlternateKeychain"`
+`ks` defaults to `Secrets` -> `~/Library/Keychains/Secrets.keychain-db`.
 
-You can also work with multiple keychains with ks. You can pick them on a per-command basis by using the `-k` argument right after the ks command.
-
-This allows you to pick from which keychain you want to run the ks commands on.
-
-Examples:
+Select another keychain with `-k` or `KS_DEFAULT_KEYCHAIN`. Both accept a name or an absolute `.keychain-db` path; `init` can create either.
 
 ```sh
-# Create a "ProjectA" keychain
 ks -k ProjectA init
-
-# Create a "ProjectB" keychain
-ks -k ProjectB init
-
-ks -k ProjectA add some-password 'password123'
-ks -k ProjectB add some-password 'hunter2'
-
-ks -k ProjectA show some-password
-# password123
-ks -k ProjectB show some-password
-# hunter2
+ks -k ProjectA add token < token.txt
+ks -k "$HOME/Library/Keychains/ProjectA.keychain-db" ls
+export KS_DEFAULT_KEYCHAIN=ProjectA
+security delete-keychain ProjectA
 ```
 
-## iCloud sync
+### iCloud sync
 
-You can backup & sync your keychains between computers using cloud syncing software paired with a symlink. Here's an example for iCloud.
+A keychain is a single file, so any file-syncing service backs it up and shares it between machines: move the file into the synced folder, then symlink it back where macOS looks for it.
 
-1. Create a keychain for syncing (Optional)
-
-By default, `ks` will create a `Secrets` keychain under `~/Library/Keychains/Secrets.keychain-db`. You can use this one for syncing, or create another one. Ex:
-
-```
-# Create a new keychain named iCloud
+```sh
 ks -k iCloud init
+CLOUD_FOLDER="$HOME/Library/Mobile Documents/com~apple~CloudDocs"
+mv "$HOME/Library/Keychains/iCloud.keychain-db" "$CLOUD_FOLDER/iCloud.keychain-db"
+ln -s "$CLOUD_FOLDER/iCloud.keychain-db" "$HOME/Library/Keychains/iCloud.keychain-db"
 ```
 
-2. Move the keychain to the iCloud directory
+On each machine, wait for the file to land in iCloud Drive, then create the same symlink. Creating and deleting a folder forces iCloud to refresh.
 
+### Coding agents
+
+For unattended access, give agents their own keychain, with an empty password or one you store where the agent can read it. Either way the file has no meaningful password protection: put only credentials you accept storing that way in it.
+
+```sh
+printf '' | ks -k Agents init
+ks -k Agents add token < token.txt
+security unlock-keychain -p '' "$HOME/Library/Keychains/Agents.keychain-db"
 ```
-mv "/Users/$USER/Library/Keychains/iCloud.keychain-db" "/Users/$USER/Library/Mobile Documents/com~apple~CloudDocs/iCloud.keychain-db"
+
+macOS locks the keychain on logout or reboot. Unlock it once after login before the agent accesses it; `ks init` turns off idle and sleep locking. To unlock it when a zsh login shell starts, add the `security unlock-keychain` line above to your `~/.zprofile`, or equivalent.
+
+
+### Completion
+
+Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_DEFAULT_KEYCHAIN`; a `-k` on the command line is ignored.
+
+<details>
+<summary>zsh — add in your profile (eg: .zprofile), after <code>compinit</code></summary>
+
+```sh
+_ks() {
+  if (( CURRENT == 2 )); then
+    compadd init add update show cp rm ls help
+  elif (( CURRENT == 3 )) && [[ "$words[2]" == (show|cp|rm|update) ]]; then
+    compadd -- ${(f)"$(ks ls 2>/dev/null)"}
+  fi
+}
+compdef _ks ks
 ```
 
-3. Create a symlink to the keychain under the `~/Library/Keychains/` directory
+</details>
 
+<details>
+<summary>bash — add in your profile (eg: .bash_profile)</summary>
+
+```sh
+_ks() {
+  case "$COMP_CWORD:${COMP_WORDS[1]}" in
+    1:*) COMPREPLY=($(compgen -W "init add update show cp rm ls help" -- "$2"));;
+    2:show|2:cp|2:rm|2:update) COMPREPLY=($(compgen -W "$(ks ls 2>/dev/null)" -- "$2"));;
+  esac
+}
+complete -F _ks ks
 ```
-ln -s "/Users/$USER/Library/Mobile Documents/com~apple~CloudDocs/iCloud.keychain-db" "/Users/$USER/Library/Keychains/iCloud.keychain-db"
-```
 
-4. Repeat step 3 on every machine that needs syncing
+### Keychain Access app
 
-Wait for the file to sync, then recreate the symlink from step 3 on the new computer. Pro tip: you can create and delete a folder to force the refresh of iCloud.
+https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb8
+
+
+</details>
 
 ## Who is this for
 
-This is for you if:
-
-- You're on macOS.
-- You want to store and retrieve secrets using simple commands.
-- You want to leverage OS functionnality.
-
-> Bonus: You don't like the idea of relying on a HTTP request, a third party server and a credit card subscription to access your secrets.
+You're on macOS, you want to store and read secrets with short commands, and you'd rather not put an HTTP request, a third-party server and a subscription between you and your own credentials.
 
 ---
 
-PRs, issues, comments and ideas are welcome.
-
-Give the repo a star if you like this!
+PRs, issues, comments and ideas are welcome. Give the repo a star if you like this.
 
 Crafted by [millisecond studio](https://millisecond.studio/) ❤️
+
+[MIT license](LICENSE).
