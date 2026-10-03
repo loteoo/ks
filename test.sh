@@ -58,6 +58,7 @@ printf 'no-newline' | "$ks" -k "$keychain" update example
 [[ "$("$ks" -k "$keychain" show example | xxd -p)" == '6e6f2d6e65776c696e65' ]] || { echo 'show added bytes when piped' >&2; exit 1; }
 # a locked keychain fails with a message rather than in silence
 security lock-keychain "$keychain"
+echo 'Press Cancel on the unlock dialog.'
 if "$ks" -k "$keychain" show example > "$tmp/output" 2>&1; then echo 'locked show succeeded' >&2; exit 1; fi
 [[ -s "$tmp/output" ]] || { echo 'locked show failed silently' >&2; exit 1; }
 security unlock-keychain -p '' "$keychain"

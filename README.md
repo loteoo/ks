@@ -78,7 +78,7 @@ On each machine, wait for the file to land in iCloud Drive, then create the same
 Agents can use any unlocked keychain, so the problem is unlocking it without you. macOS unlocks the `login` keychain when you log in: store your other keychains' passphrases there, and unlock them from your `~/.zprofile` or from your agent's instructions. Think carefully about what blast radius you create when giving secrets to LLM agents.
 
 ```sh
-pbpaste | ks -k login add ProjectA-passphrase
+ks -k login add ProjectA-passphrase
 security unlock-keychain -p "$(ks -k login show ProjectA-passphrase)" ProjectA.keychain-db
 ```
 
@@ -119,7 +119,7 @@ Here's a tab-completion script you can use for zsh/bash. Completing keys reads t
 Add this to your interactive shell config (`.zshrc` or `.bashrc`):
 
 ```sh
-autoload -Uz bashcompinit && bashcompinit # zsh only, after compinit
+[[ -n $ZSH_VERSION ]] && autoload -Uz bashcompinit && bashcompinit # after compinit
 _ks() {
   case "$COMP_CWORD:${COMP_WORDS[@]:1:1}" in
     1:*) COMPREPLY=($(compgen -W "init add update show cp rm ls help" -- "$2"));;

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 IFS=$'\n\t'
-VERSION="0.6.0"
+VERSION="1.0.0"
 
 _throw() { echo "$1" 1>&2; exit 1; }
 
