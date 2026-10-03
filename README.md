@@ -48,13 +48,13 @@ ks show old-name | ks add new-name && ks rm old-name # Rename name in ks
 
 `ks` defaults to `Secrets` -> `~/Library/Keychains/Secrets.keychain-db`.
 
-Select another keychain with `-k` or `KS_DEFAULT_KEYCHAIN`. Both accept a name or an absolute `.keychain-db` path; `init` can create either.
+Select another keychain with `-k` or `KS_KEYCHAIN`. Both accept a name or an absolute `.keychain-db` path; `init` can create either.
 
 ```sh
 ks -k ProjectA init
 ks -k ProjectA add token < token.txt
 ks -k "$HOME/Library/Keychains/ProjectA.keychain-db" ls
-export KS_DEFAULT_KEYCHAIN=ProjectA
+export KS_KEYCHAIN=ProjectA
 security delete-keychain ProjectA
 ```
 
@@ -86,7 +86,7 @@ macOS locks the keychain on logout or reboot. Unlock it once after login before 
 
 ### Completion
 
-Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_DEFAULT_KEYCHAIN`; a `-k` on the command line is ignored.
+Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_KEYCHAIN`; a `-k` on the command line is ignored.
 
 <details>
 <summary>zsh — add in your profile (eg: .zprofile), after <code>compinit</code></summary>

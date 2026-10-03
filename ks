@@ -73,7 +73,7 @@ EOT
 }
 
 
-KEYCHAIN="${KS_DEFAULT_KEYCHAIN:-Secrets}"
+KEYCHAIN="${KS_KEYCHAIN:-Secrets}"
 if [[ "${1:-}" == -k && -n "${2:-}" ]]; then KEYCHAIN="$2"; shift 2; fi
 KEYCHAIN_FILE="$KEYCHAIN"
 [[ "$KEYCHAIN_FILE" == *.keychain-db ]] || KEYCHAIN_FILE="$KEYCHAIN_FILE.keychain-db"

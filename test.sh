@@ -27,9 +27,9 @@ printf '' | "$ks" -k "$keychain" init
 rm -f "$keychain"
 printf '' | "$ks" -k "$keychain" init
 [[ "$(security list-keychains -d user | grep -c 'Test Keychain')" == 1 ]] || { echo 'init duplicated the search list entry' >&2; exit 1; }
-# add stores a value; show reads it back through KS_DEFAULT_KEYCHAIN
+# add stores a value; show reads it back through KS_KEYCHAIN
 "$ks" -k "$keychain" add example 'initial secret'
-[[ "$(KS_DEFAULT_KEYCHAIN="$keychain" "$ks" show example)" == 'initial secret' ]] || { echo 'add/show failed' >&2; exit 1; }
+[[ "$(KS_KEYCHAIN="$keychain" "$ks" show example)" == 'initial secret' ]] || { echo 'add/show failed' >&2; exit 1; }
 # ls lists the key
 [[ "$("$ks" -k "$keychain" ls)" == example ]] || { echo 'ls failed' >&2; exit 1; }
 # cp puts the value on the clipboard
