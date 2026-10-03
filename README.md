@@ -32,17 +32,17 @@ Run `ks help` for the command list.
 
 ```sh
 ks init
-pbpaste | ks add my-api-key # Add from clipboard via stdin
-ks add my-secret secret123 # Warning: Most default shell configurations will save this in history
+ks add my-secret secret123 # Warning: saved in shell history, see "Skip shell history" below
+ks add my-api-key "$(pbpaste)" # Add from clipboard
+pbpaste | ks add my-token # Add from clipboard via stdin
 ks show my-secret
 ks cp my-secret
 ks ls
 ks rm my-secret
 openssl rand -hex 32 | ks add my-secret # Generate & add secret
 openssl rand -hex 32 | ks update my-secret # Rotate secret
-ks show old-name | ks add new-name && ks rm old-name # Rename name in ks
+ks show old-name | ks add new-name && ks rm old-name # Rename a key
 ```
-
 
 ### Keychains
 
@@ -55,7 +55,7 @@ ks -k ProjectA init
 ks -k ProjectA add token < token.txt
 ks -k "$HOME/Library/Keychains/ProjectA.keychain-db" ls
 export KS_KEYCHAIN=ProjectA
-security delete-keychain ProjectA
+security delete-keychain ProjectA.keychain-db
 ```
 
 ### iCloud sync
@@ -69,27 +69,25 @@ mv "$HOME/Library/Keychains/iCloud.keychain-db" "$CLOUD_FOLDER/iCloud.keychain-d
 ln -s "$CLOUD_FOLDER/iCloud.keychain-db" "$HOME/Library/Keychains/iCloud.keychain-db"
 ```
 
-On each machine, wait for the file to land in iCloud Drive, then create the same symlink. Creating and deleting a folder forces iCloud to refresh.
+On each machine, wait for the file to land in iCloud Drive, then create the same symlink.
 
 ### Coding agents
 
-For unattended access, give agents their own keychain, with an empty password or one you store where the agent can read it. Either way the file has no meaningful password protection: put only credentials you accept storing that way in it.
+Agents can use any unlocked keychain, so the problem is unlocking it without you. macOS unlocks the `login` keychain when you log in: store your other keychains' passphrases there, and unlock them from your `~/.zprofile` or from your agent's instructions. Think carefully about what blast radius you create when giving secrets to LLM agents.
 
 ```sh
-printf '' | ks -k Agents init
-ks -k Agents add token < token.txt
-security unlock-keychain -p '' "$HOME/Library/Keychains/Agents.keychain-db"
+pbpaste | ks -k login add ProjectA-passphrase
+security unlock-keychain -p "$(ks -k login show ProjectA-passphrase)" ProjectA.keychain-db
 ```
 
-macOS locks the keychain on logout or reboot. Unlock it once after login before the agent accesses it; `ks init` turns off idle and sleep locking. To unlock it when a zsh login shell starts, add the `security unlock-keychain` line above to your `~/.zprofile`, or equivalent.
-
+## Terminal tips
 
 ### Completion
 
 Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_KEYCHAIN`; a `-k` on the command line is ignored.
 
 <details>
-<summary>zsh — add in your profile (eg: .zprofile), after <code>compinit</code></summary>
+<summary>zsh — add in your profile (e.g. .zprofile), after <code>compinit</code></summary>
 
 ```sh
 _ks() {
@@ -105,7 +103,7 @@ compdef _ks ks
 </details>
 
 <details>
-<summary>bash — add in your profile (eg: .bash_profile)</summary>
+<summary>bash — add in your profile (e.g. .bash_profile)</summary>
 
 ```sh
 _ks() {
@@ -117,12 +115,35 @@ _ks() {
 complete -F _ks ks
 ```
 
-### Keychain Access app
+</details>
+
+### fzf tricks
+
+For [fzf](https://github.com/junegunn/fzf) users, here are some tips:
+
+```sh
+ks ls | fzf | pbcopy # search & copy a key
+ks cp $(ks ls | fzf) # search & copy a value by key
+```
+
+### Skip shell history
+
+bash and zsh have this convenient option to skip writing a command to the shell history when it starts with a space. This way, you can ` ks add my-secret mysecret123` (note the space) without having the value leak to your shell history. Add these to your shell profile:
+
+```sh
+# for zsh
+setopt HIST_IGNORE_SPACE
+
+# for bash
+HISTCONTROL=ignorespace
+# alternatively, use "ignoreboth" to skip spaces and duplicate commands
+```
+
+## Keychain Access app
+
+macOS ships with the Keychain Access app, which gives your keychains a GUI.
 
 https://github.com/loteoo/ks/assets/14101189/fec05de0-a5a7-47aa-9366-10ad20203eb8
-
-
-</details>
 
 ## Who is this for
 
