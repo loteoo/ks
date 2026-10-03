@@ -31,24 +31,26 @@ chmod +x "$HOME/.local/bin/ks"
 Run `ks help` for the command list.
 
 ```sh
-ks init
-ks add my-secret secret123 # Warning: saved in shell history, see "Skip shell history" below
-ks add my-api-key "$(pbpaste)" # Add from clipboard
-pbpaste | ks add my-token # Add from clipboard via stdin
+ks init # create keychain file
+ks add my-secret # prompts for the value
+ks add my-api-key "$(pbpaste)" # add from clipboard
+pbpaste | ks add my-token # add from stdin
 ks show my-secret
 ks cp my-secret
 ks ls
 ks rm my-secret
-openssl rand -hex 32 | ks add my-secret # Generate & add secret
-openssl rand -hex 32 | ks update my-secret # Rotate secret
-ks show old-name | ks add new-name && ks rm old-name # Rename a key
+openssl rand -hex 32 | ks add my-secret # generate & add secret
+openssl rand -hex 32 | ks update my-secret # rotate secret
+ks show old-name | ks add new-name && ks rm old-name # rename a key
 ```
 
 ### Keychains
 
-`ks` defaults to `Secrets` -> `~/Library/Keychains/Secrets.keychain-db`.
+Specify the keychain with `-k` or `KS_KEYCHAIN`, as a name or an absolute `.keychain-db` path.
 
-Select another keychain with `-k` or `KS_KEYCHAIN`. Both accept a name or an absolute `.keychain-db` path; `init` can create either.
+Named keychains are stored in the `~/Library/Keychains/` folder.
+
+The default is `Secrets` -> `~/Library/Keychains/Secrets.keychain-db`.
 
 ```sh
 ks -k ProjectA init
@@ -82,41 +84,6 @@ security unlock-keychain -p "$(ks -k login show ProjectA-passphrase)" ProjectA.k
 
 ## Terminal tips
 
-### Completion
-
-Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_KEYCHAIN`; a `-k` on the command line is ignored.
-
-<details>
-<summary>zsh — add in your profile (e.g. .zprofile), after <code>compinit</code></summary>
-
-```sh
-_ks() {
-  if (( CURRENT == 2 )); then
-    compadd init add update show cp rm ls help
-  elif (( CURRENT == 3 )) && [[ "$words[2]" == (show|cp|rm|update) ]]; then
-    compadd -- ${(f)"$(ks ls 2>/dev/null)"}
-  fi
-}
-compdef _ks ks
-```
-
-</details>
-
-<details>
-<summary>bash — add in your profile (e.g. .bash_profile)</summary>
-
-```sh
-_ks() {
-  case "$COMP_CWORD:${COMP_WORDS[1]}" in
-    1:*) COMPREPLY=($(compgen -W "init add update show cp rm ls help" -- "$2"));;
-    2:show|2:cp|2:rm|2:update) COMPREPLY=($(compgen -W "$(ks ls 2>/dev/null)" -- "$2"));;
-  esac
-}
-complete -F _ks ks
-```
-
-</details>
-
 ### fzf tricks
 
 For [fzf](https://github.com/junegunn/fzf) users, here are some tips:
@@ -124,11 +91,17 @@ For [fzf](https://github.com/junegunn/fzf) users, here are some tips:
 ```sh
 ks ls | fzf | pbcopy # search & copy a key
 ks cp $(ks ls | fzf) # search & copy a value by key
+
+# search with a masked preview of the value, then copy it; accepts -k
+ks-fzf() {
+  local key
+  key=$(ks "$@" ls | fzf --preview "ks $* show {} | sed -E 's/^(..).+(..)\$/\1***\2/;s/^.{1,4}\$/***/'" --preview-window=down,3,wrap) && ks "$@" cp "$key"
+}
 ```
 
 ### Skip shell history
 
-bash and zsh have this convenient option to skip writing a command to the shell history when it starts with a space. This way, you can ` ks add my-secret mysecret123` (note the space) without having the value leak to your shell history. Add these to your shell profile:
+bash and zsh have an option to skip writing a command to the shell history when it starts with a space. This way, you can type ` ks add my-secret mysecret123` (note the space at the beginning) without having the value leak to your shell history. If it interests you, add these to your shell profile:
 
 ```sh
 # for zsh
@@ -137,6 +110,23 @@ setopt HIST_IGNORE_SPACE
 # for bash
 HISTCONTROL=ignorespace
 # alternatively, use "ignoreboth" to skip spaces and duplicate commands
+```
+
+### Completion
+
+Here's a tab-completion script you can use for zsh/bash. Completing keys reads the keychain, so the first TAB on a locked one pops the unlock dialog, and completes silently once unlocked. Keys come from the keychain in `KS_KEYCHAIN`.
+
+Add this to your interactive shell config (`.zshrc` or `.bashrc`):
+
+```sh
+autoload -Uz bashcompinit && bashcompinit # zsh only, after compinit
+_ks() {
+  case "$COMP_CWORD:${COMP_WORDS[@]:1:1}" in
+    1:*) COMPREPLY=($(compgen -W "init add update show cp rm ls help" -- "$2"));;
+    2:show|2:cp|2:rm|2:update) COMPREPLY=($(compgen -W "$(ks ls 2>/dev/null)" -- "$2"));;
+  esac
+}
+complete -F _ks ks
 ```
 
 ## Keychain Access app

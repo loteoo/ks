@@ -5,21 +5,20 @@ VERSION="0.6.0"
 
 _throw() { echo "$1" 1>&2; exit 1; }
 
-_check() { [[ -n "${1:-}" && "$1" != *[!a-zA-Z0-9._-]* ]] || _throw "Specify a key of letters, digits, dots, dashes and underscores."; }
-
 _sec() {
   key="$1"; shift
+  [[ -n "$key" && "$key" != *[!a-zA-Z0-9._-]* ]] || _throw "Specify a key of letters, digits, dots, dashes and underscores."
   err="$(security "$@" -s "$key" "$KEYCHAIN_FILE" 2>&1 1> /dev/null)" && return 0
   [[ "$err" == *"could not be found"* ]] || _throw "${err:-Keychain \"$KEYCHAIN\" is locked, or access to it was denied.}"
   return 1
 }
 
 _store() {
-  _check "${2:-}"
-  [[ -n "${3+x}" || ! -t 0 ]] || _throw "No value specified. Pass it as an argument or pipe it in."
-  if _sec "$2" find-generic-password -a "$USER"; then [[ "$1" == update ]] || _throw "Secret \"$2\" already exists in keychain."
+  if _sec "${2:-}" find-generic-password -a "$USER"; then [[ "$1" == update ]] || _throw "Secret \"$2\" already exists in keychain."
   else [[ "$1" == add ]] || _throw "Secret \"$2\" was not found in keychain."; fi
-  if [[ -n "${3+x}" ]]; then value="$3"; else value="$(cat; printf .)"; value="${value%.}"; fi
+  if [[ -n "${3+x}" ]]; then value="$3"
+  elif [[ -t 0 ]]; then IFS= read -rsp "Value for \"$2\": " value; echo 1>&2
+  else value="$(cat; printf .)"; value="${value%.}"; fi
   security add-generic-password -U -a "$USER" -s "$2" -w "$value" "$KEYCHAIN_FILE"
 }
 
@@ -35,8 +34,7 @@ add() { _store add "$@"; }
 update() { _store update "$@"; }
 
 show() {
-  _check "${1:-}"
-  _sec "$1" find-generic-password -g || _throw "Secret \"$1\" was not found in keychain."
+  _sec "${1:-}" find-generic-password -g || _throw "Secret \"$1\" was not found in keychain."
   raw="${err##*$'\n'}"; raw="${raw#password: }"
   if [[ "$raw" == '"'*'"' ]]; then printf '%s' "${raw:1:${#raw}-2}"; else xxd -r -p <<< "${raw%% *}"; fi
   [[ ! -t 1 ]] || echo
@@ -45,8 +43,7 @@ show() {
 cp() { value="$(show "$@"; printf .)" && printf '%s' "${value%.}" | pbcopy; }
 
 rm() {
-  _check "${1:-}"
-  _sec "$1" delete-generic-password || _throw "Secret \"$1\" was not found in keychain."
+  _sec "${1:-}" delete-generic-password || _throw "Secret \"$1\" was not found in keychain."
 }
 
 ls() { security dump-keychain "$KEYCHAIN_FILE" | sed -n 's/^ *"svce"<blob>="\(.*\)"$/\1/p'; }

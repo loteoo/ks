@@ -45,6 +45,9 @@ if "$ks" -k "$keychain" update missing replacement > "$tmp/output" 2>&1; then ec
 # cp on a missing key fails and leaves the clipboard alone
 if "$ks" -k "$keychain" cp missing > "$tmp/output" 2>&1; then echo 'missing-key cp succeeded' >&2; exit 1; fi
 [[ "$(pbpaste)" == 'initial secret' ]] || { echo 'missing-key cp changed clipboard' >&2; exit 1; }
+# invalid keys are rejected
+if "$ks" -k "$keychain" show 'bad key' > "$tmp/output" 2>&1; then echo 'invalid key accepted' >&2; exit 1; fi
+[[ "$(< "$tmp/output")" == 'Specify a key of letters, digits, dots, dashes and underscores.' ]] || { echo 'invalid key error changed' >&2; exit 1; }
 # update round-trips a multiline value byte for byte
 printf 'updated\nvalue\n' | "$ks" -k "$keychain" update example
 "$ks" -k "$keychain" show example > "$tmp/actual"
