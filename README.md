@@ -24,6 +24,7 @@ Manual install:
 mkdir -p "$HOME/.local/bin"
 curl -fsSL https://raw.githubusercontent.com/loteoo/ks/main/ks -o "$HOME/.local/bin/ks"
 chmod +x "$HOME/.local/bin/ks"
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zprofile # skip if ~/.local/bin is already in your PATH
 ```
 
 ## Usage
